@@ -3,7 +3,7 @@
 - [x] Official starter 1.0.2 tooling
 - [x] Ledpay tools in `src/plugin.ts`
 - [x] `pnpm test` passed on 2026-10-17
-- [x] `dist/plugin.mjs` 400,506 bytes (391.1 KiB), SHA-256 `3ee074abd517641fa5fc3916916054447367dcd0975e7a24a8d6b1ff1926c2c1`
+- [x] `dist/plugin.mjs` 406,039 bytes, SHA-256 `5345334bc2e3bab715f44782f37eacf9faacbdab53f0b633b9a661f85a2bfc79`
 - [ ] Upload `dist/plugin.mjs` in https://developer.paybox.sh/
 - [ ] Hosted checks passed
 - [ ] Sample tool test in portal

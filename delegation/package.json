@@ -1,0 +1,33 @@
+{
+  "name": "@ledpay/delegation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/compile-token.mjs && tsx tests/onchain.test.ts",
+    "compile-token": "node scripts/compile-token.mjs",
+    "executor": "tsx src/executor.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@zerodev/ecdsa-validator": "^5.4.9",
+    "@zerodev/permissions": "^5.6.4",
+    "@zerodev/sdk": "^5.5.11",
+    "tslib": "^2.8.1",
+    "viem": "^2.57.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "solc": "^0.8.24",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

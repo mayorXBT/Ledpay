@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ledpay onboarding</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Ledpay · Ledger-owned Kernel session</p>
+      <h1>Authorize a scoped spending key</h1>
+      <p>
+        This page runs in desktop Chromium because Ledger WebHID cannot run inside the hosted PayBox plugin sandbox.
+        The Ledger private key never leaves the device. The session key is created by the executor and can only
+        transfer the named test token to the named recipient, under the per-call cap, until expiry.
+      </p>
+      <ol>
+        <li>Quit Ledger Live. USB HID is exclusive, so Live will make Chrome look frozen.</li>
+        <li>Unlock Ledger Flex and open the Ethereum app. Unlocked on the dashboard is not enough.</li>
+        <li>Click Connect. The first time, Chrome opens a device picker at the <strong>top of this tab</strong>. After that it reuses the granted Flex.</li>
+        <li>Confirm the address on the Flex screen, then authorize the session.</li>
+        <li>Fund the Kernel address with test ETH and the test token. Do not send funds to the Ledger EOA for agent spend.</li>
+      </ol>
+      <p class="warn">
+        Ledger Agent Intent is a per-transaction approval product. Ledpay does not use it for autonomous spend.
+        Autonomous spend uses a ZeroDev Kernel permission that you authorize once on the Ledger.
+      </p>
+      <div class="row">
+        <button id="connect" type="button">Connect Ledger Flex</button>
+        <button id="authorize" type="button" disabled>Authorize session</button>
+        <button id="revoke" type="button" disabled>Request revoke</button>
+      </div>
+      <pre id="log">Ready. Click Connect Ledger Flex. If Chrome already granted the Flex, no picker this time.</pre>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

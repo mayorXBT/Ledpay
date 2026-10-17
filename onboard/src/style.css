@@ -1,0 +1,57 @@
+:root {
+  color: #e8edf2;
+  background: #0c1116;
+  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+}
+body {
+  margin: 0;
+  line-height: 1.5;
+}
+main {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+}
+.eyebrow {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: #8aa0b5;
+}
+h1 {
+  font-size: 1.75rem;
+  margin: 0.25rem 0 1rem;
+}
+.warn {
+  border: 1px solid #8a6a12;
+  background: #231c08;
+  padding: 0.75rem 1rem;
+  color: #f3d789;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.25rem 0;
+}
+button {
+  background: #e8edf2;
+  color: #0c1116;
+  border: 0;
+  padding: 0.6rem 0.9rem;
+  font: inherit;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+pre {
+  white-space: pre-wrap;
+  background: #151c24;
+  padding: 1rem;
+  min-height: 8rem;
+}
+ol {
+  padding-left: 1.2rem;
+}

@@ -4,4 +4,10 @@ node_modules/
 .env
 .env.local
 C:Usershp/
+delegation/node_modules/
+delegation/.data/
+delegation/out/
+delegation/cache/
+onboard/node_modules/
+onboard/dist/
 

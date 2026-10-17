@@ -18,7 +18,11 @@ The hosted plugin sandbox has no WebHID/USB, no browser, and no persistent disk.
 
 ## Gate C — On-chain Kernel session policy
 
-ZeroDev Kernel session keys need a deployed smart account, bundler, and owner signature. The plugin cannot hold a session signer or persist cumulative spend. Ledpay enforces per-call policy in process (chain, USDC token, recipient allowlist, max amount) and returns `proposeEvm` calldata. PayBox wallet policy is the second gate. This is plugin-side enforcement, not Kernel on-chain validation.
+ZeroDev Kernel v3 permissions (`@zerodev/permissions`) are the autonomous spend path: one ECDSA session signer + call policy + timestamp policy. The hosted plugin cannot hold that signer. `delegation/` implements Kernel v3.1 / EntryPoint 0.7, a local `handleOps` bundler, and tests that over-limit, wrong recipient, expired, and revoked UserOps fail in EntryPoint validation.
+
+The plugin-side Base USDC cap remains as the marketplace sample. It is **not** the PRD enforcement layer.
+
+Ledger Agent Intent is per-transaction HITL approval. It is not used for autonomous spend.
 
 ## Gate D — Chain and token
 

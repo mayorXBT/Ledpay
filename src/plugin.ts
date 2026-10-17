@@ -10,6 +10,7 @@ import {
   encodeErc20Transfer,
   loadPolicy,
 } from "./policy.js";
+import { executorConfigured, fetchExecutor, onboardUrl } from "./session-client.js";
 
 const PROTOCOL_VERSION = "2026-07-28";
 const evmAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
@@ -238,19 +239,192 @@ function createServer() {
             required: false,
             description: "Optional comma-separated 0x addresses. Empty means any valid recipient is allowed.",
           },
+          {
+            name: "LEDPAY_EXECUTOR_URL",
+            required: false,
+            description: "HTTPS origin of the Ledpay session executor. Required for Kernel session sends.",
+          },
+          {
+            name: "LEDPAY_ONBOARD_URL",
+            required: false,
+            description: "HTTPS origin of the Ledger WebHID onboarding app.",
+          },
         ],
         agentPrompt:
-          "Use Ledpay to pay 0.5 USDC on Base to 0x1111111111111111111111111111111111111111. Call ledpay_check_payment first, then ledpay_send_usdc only if allowed.",
+          "If a Ledger Kernel session is ready, use ledpay_session_send. Otherwise use Ledpay to pay 0.5 USDC on Base to 0x1111111111111111111111111111111111111111: call ledpay_check_payment first, then ledpay_send_usdc only if allowed.",
       };
       return {
         content: [{
           type: "text" as const,
           text: [
             structuredContent.portalUpload,
-            "Optional env: LEDPAY_MAX_AMOUNT_USDC, LEDPAY_ALLOWED_RECIPIENTS.",
+            "Optional env: LEDPAY_MAX_AMOUNT_USDC, LEDPAY_ALLOWED_RECIPIENTS, LEDPAY_EXECUTOR_URL, LEDPAY_ONBOARD_URL.",
+            "Kernel session tools call the executor when LEDPAY_EXECUTOR_URL is set. Ledger onboarding is a separate Chromium app.",
             `Example agent prompt: ${structuredContent.agentPrompt}`,
           ].join(" "),
         }],
+        structuredContent,
+      };
+    },
+  );
+
+  const sessionViewSchema = z.object({
+    status: z.string(),
+    setupUrl: z.string(),
+    executorConfigured: z.boolean(),
+    ownerAddress: z.string().nullable(),
+    kernelAddress: z.string().nullable(),
+    sessionKeyAddress: z.string().nullable(),
+    message: z.string(),
+  }).strict();
+
+  server.registerTool(
+    "ledpay_get_setup_link",
+    {
+      title: "Get Ledger onboarding URL",
+      description:
+        "Returns the Ledpay browser onboarding URL. Ledger USB/WebHID cannot run inside the PayBox sandbox. Open this URL on desktop Chromium, connect a Ledger Flex, and authorize the Kernel session.",
+      inputSchema: z.object({}).strict(),
+      outputSchema: z.object({ setupUrl: z.string(), executorConfigured: z.boolean(), message: z.string() }).strict(),
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async () => {
+      const setupUrl = onboardUrl();
+      const structuredContent = {
+        setupUrl,
+        executorConfigured: executorConfigured(),
+        message:
+          "Open the URL in desktop Chromium, connect Ledger Flex over USB, verify the address on device, then authorize the session key. Ledpay never asks for the Ledger PIN or seed.",
+      };
+      return {
+        content: [{ type: "text" as const, text: `${structuredContent.message} ${setupUrl}` }],
+        structuredContent,
+      };
+    },
+  );
+
+  server.registerTool(
+    "ledpay_get_session",
+    {
+      title: "Get Ledger-owned Kernel session",
+      description:
+        "Reads the executor's current Kernel account, session key address, and on-chain policy. Does not accept a caller-supplied account id.",
+      inputSchema: z.object({}).strict(),
+      outputSchema: sessionViewSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    async () => {
+      const setupUrl = onboardUrl();
+      const result = await fetchExecutor("/session");
+      const body = result.body;
+      const structuredContent = {
+        status: String(body.status ?? body.error ?? "awaiting_setup"),
+        setupUrl,
+        executorConfigured: executorConfigured(),
+        ownerAddress: typeof body.ownerAddress === "string" ? body.ownerAddress : null,
+        kernelAddress: typeof body.kernelAddress === "string" ? body.kernelAddress : null,
+        sessionKeyAddress: typeof body.sessionKeyAddress === "string" ? body.sessionKeyAddress : null,
+        message: String(body.message ?? body.error ?? body.signingModel ?? "Session lookup finished."),
+      };
+      return {
+        content: [{ type: "text" as const, text: structuredContent.message }],
+        structuredContent,
+      };
+    },
+  );
+
+  server.registerTool(
+    "ledpay_session_send",
+    {
+      title: "Send via Kernel session key",
+      description:
+        "Asks the Ledpay executor to submit an ERC-4337 UserOp from the scoped session key. On-chain call policy enforces token, recipient, and per-call cap. The Ledger is not prompted. This is not a PayBox wallet proposal.",
+      inputSchema: z.object({
+        recipient: evmAddress,
+        amountAtomic: z.string().regex(/^(0|[1-9][0-9]{0,77})$/),
+        idempotencyKey: z.string().min(1).max(128),
+      }).strict(),
+      outputSchema: z.object({
+        id: z.string(),
+        status: z.string(),
+        recipient: z.string(),
+        amount: z.string(),
+        userOpHash: z.string().optional(),
+        txHash: z.string().optional(),
+        error: z.string().optional(),
+      }).strict(),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    async ({ recipient, amountAtomic, idempotencyKey }) => {
+      const result = await fetchExecutor("/session/send", {
+        method: "POST",
+        body: JSON.stringify({ recipient, amountAtomic, idempotencyKey }),
+      });
+      const body = result.body;
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: "text" as const, text: String(body.message ?? body.error ?? "session send failed") }],
+        };
+      }
+      const structuredContent = {
+        id: String(body.id ?? "unknown"),
+        status: String(body.status ?? "unknown"),
+        recipient: String(body.recipient ?? recipient),
+        amount: String(body.amount ?? amountAtomic),
+        ...(typeof body.userOpHash === "string" ? { userOpHash: body.userOpHash } : {}),
+        ...(typeof body.txHash === "string" ? { txHash: body.txHash } : {}),
+        ...(typeof body.error === "string" ? { error: body.error } : {}),
+      };
+      return {
+        content: [{
+          type: "text" as const,
+          text: `Session send ${structuredContent.status} id=${structuredContent.id}` +
+            (structuredContent.txHash ? ` tx=${structuredContent.txHash}` : "") +
+            (structuredContent.error ? ` error=${structuredContent.error}` : ""),
+        }],
+        structuredContent,
+      };
+    },
+  );
+
+  server.registerTool(
+    "ledpay_get_transaction",
+    {
+      title: "Get session transaction",
+      description: "Fetch a sanitized session UserOp receipt by request id from the executor.",
+      inputSchema: z.object({ requestId: z.string().min(1).max(128) }).strict(),
+      outputSchema: z.object({
+        id: z.string(),
+        status: z.string(),
+        recipient: z.string().optional(),
+        amount: z.string().optional(),
+        userOpHash: z.string().optional(),
+        txHash: z.string().optional(),
+        error: z.string().optional(),
+      }).strict(),
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    async ({ requestId }) => {
+      const result = await fetchExecutor(`/transactions/${requestId}`);
+      const body = result.body;
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: "text" as const, text: String(body.error ?? "transaction not found") }],
+        };
+      }
+      const structuredContent = {
+        id: String(body.id ?? requestId),
+        status: String(body.status ?? "unknown"),
+        ...(typeof body.recipient === "string" ? { recipient: body.recipient } : {}),
+        ...(typeof body.amount === "string" ? { amount: body.amount } : {}),
+        ...(typeof body.userOpHash === "string" ? { userOpHash: body.userOpHash } : {}),
+        ...(typeof body.txHash === "string" ? { txHash: body.txHash } : {}),
+        ...(typeof body.error === "string" ? { error: body.error } : {}),
+      };
+      return {
+        content: [{ type: "text" as const, text: `Transaction ${structuredContent.id} ${structuredContent.status}` }],
         structuredContent,
       };
     },

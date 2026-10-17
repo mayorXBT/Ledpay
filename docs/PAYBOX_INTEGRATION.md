@@ -12,8 +12,12 @@ Upload only `dist/plugin.mjs` after `pnpm test` passes.
 | --- | --- |
 | `ledpay_get_policy` | Current chain, USDC token, per-call cap, allowlist |
 | `ledpay_check_payment` | Dry-run policy check |
-| `ledpay_send_usdc` | Unsigned Base USDC `transfer` proposal if policy allows |
+| `ledpay_send_usdc` | Unsigned Base USDC `transfer` proposal if policy allows (marketplace sample) |
 | `ledpay_get_setup` | Portal config and example agent prompt |
+| `ledpay_get_setup_link` | Chromium Ledger onboarding URL |
+| `ledpay_get_session` | Executor Kernel/session view; no caller-supplied account id |
+| `ledpay_session_send` | Scoped Kernel UserOp via executor |
+| `ledpay_get_transaction` | Sanitized UserOp receipt |
 
 Sample call used by local/hosted checks:
 
@@ -29,11 +33,13 @@ Sample call used by local/hosted checks:
 
 ## Portal configuration
 
-- Network hosts: none. Tools do not call the network.
-- Secrets: none. Do not add private keys.
+- Network hosts: none for sample tools. Add the executor HTTPS origin when `LEDPAY_EXECUTOR_URL` is set.
+- Secrets: none in the plugin. Do not add private keys.
 - Optional environment variables:
   - `LEDPAY_MAX_AMOUNT_USDC` (default `1`)
   - `LEDPAY_ALLOWED_RECIPIENTS` (comma-separated `0x` addresses)
+  - `LEDPAY_EXECUTOR_URL` (session executor origin)
+  - `LEDPAY_ONBOARD_URL` (Ledger WebHID app origin)
 
 ## Signing
 

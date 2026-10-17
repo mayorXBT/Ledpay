@@ -62,11 +62,21 @@ if (blockedSend.structuredContent) throw new Error("rejected send must not inclu
 const setup = await call("ledpay_get_setup", {});
 if (setup.structuredContent.requiredHosts.length !== 0) throw new Error("setup should require no hosts");
 
+const setupLink = await call("ledpay_get_setup_link", {});
+if (!setupLink.structuredContent.setupUrl) throw new Error("setup link missing");
+
+const session = await call("ledpay_get_session", {});
+if (session.structuredContent.status !== "awaiting_setup") {
+  throw new Error("session without executor must be awaiting_setup");
+}
+
 process.stderr.write(JSON.stringify({
   ledpay_get_policy: "passed",
   check_0_5_usdc: "allowed",
   check_2_usdc: over.structuredContent.code,
   send_2_usdc: "isError",
   ledpay_get_setup: "passed",
+  ledpay_get_setup_link: "passed",
+  ledpay_get_session: session.structuredContent.status,
   otherRecipient: other,
 }, null, 2) + "\n");
