@@ -1,68 +1,53 @@
-const scope = [
+import { IconCheck, IconX } from "./icons";
+
+const SCOPE: [string, string][] = [
   ["Token", "USDC, Base Sepolia"],
   ["Call", "ERC-20 transfer only"],
   ["Recipient", "0x1111…1111"],
   ["Per call", "≤ 1 USDC"],
   ["Native value", "0"],
   ["Expires", "1 hour"],
-] as const;
-
-const requests = [
-  { amount: "1.000000", to: "0x1111…1111", ok: true, note: "Mined" },
-  { amount: "1.000001", to: "0x1111…1111", ok: false, note: "Reverted: over limit" },
-  { amount: "1.000000", to: "0x2222…2222", ok: false, note: "Reverted: wrong recipient" },
 ];
 
-/** Dark media panel standing in for the template's hero image: the signed session permission. */
-export function Permit() {
+const REQUESTS = [
+  { amount: "1.000000", to: "0x1111…1111", ok: true, note: "Mined" },
+  { amount: "1.000001", to: "0x1111…1111", ok: false, note: "Over limit" },
+  { amount: "1.000000", to: "0x2222…2222", ok: false, note: "Wrong recipient" },
+];
+
+/** The signed-limits card: the permission scope the Ledger signed, and what happened to requests against it. */
+export function Permit({ compact = false }: { compact?: boolean }) {
   return (
-    <figure className="m-0">
-      <div
-        className="relative overflow-hidden rounded-lg bg-panel p-5 text-white md:p-8"
-        aria-label="Example Ledpay session permission and agent requests"
-        role="img"
-      >
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-60 [background:repeating-linear-gradient(115deg,transparent_0_14px,rgba(255,255,255,0.045)_14px_15px)] [mask-image:radial-gradient(120%_90%_at_100%_0%,#000_20%,transparent_75%)]"
-        />
-        <div className="relative grid gap-8 md:grid-cols-[1fr_1fr] md:gap-10">
-          <div>
-            <p className="text-[12px] font-medium uppercase text-white/55">Session permission</p>
-            <p className="mt-1 text-[18px] font-bold uppercase leading-6">Signed once on Ledger Flex</p>
-            <dl className="mt-5 divide-y divide-white/10 border-y border-white/10">
-              {scope.map(([k, v]) => (
-                <div key={k} className="flex items-center justify-between gap-4 py-2 text-[13px]">
-                  <dt className="text-white/60">{k}</dt>
-                  <dd className="font-mono text-[12px]">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-          <div className="md:pt-[52px]">
-            <p className="text-[12px] font-medium uppercase text-white/55">
-              Agent requests{" · "}
-              <span className="font-mono normal-case">ledpay_session_send</span>
-            </p>
-            <ul className="mt-3 space-y-2">
-              {requests.map((r) => (
-                <li key={`${r.amount}-${r.to}`} className="rounded-lg border border-white/10 px-3 py-2.5">
-                  <p className="font-mono text-[12px] tabular-nums">
-                    {r.amount} USDC <span className="text-white/50">→ {r.to}</span>
-                  </p>
-                  <p className={`mt-0.5 text-[12px] font-medium uppercase ${r.ok ? "text-white" : "text-signal"}`}>
-                    {r.note}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </div>
+    <div className="rounded-[16px] border border-white/[0.08] bg-[#121212] p-5 text-left shadow-[0_24px_48px_rgba(0,0,0,0.45)]">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#737373]">Session permission</p>
+          <p className="mt-1 text-[16px] font-medium text-white">Signed on Ledger Flex</p>
         </div>
+        <span className="rounded-[164px] bg-[rgba(226,107,8,0.12)] px-2.5 py-1 text-[12px] font-medium text-[#ff8a3d]">EIP-712</span>
       </div>
-      <figcaption className="mt-3 text-[12px] leading-5 text-mute">
-        Scope of the permission signed on a Ledger Flex in the repo&rsquo;s Base Sepolia run. The rejected cases come
-        from its on-chain fork tests.
-      </figcaption>
-    </figure>
+      <dl className="mt-4 divide-y divide-white/[0.06] rounded-[12px] border border-white/[0.06] bg-[#0d0d0d]">
+        {SCOPE.map(([k, v]) => (
+          <div key={k} className="flex items-center justify-between px-3.5 py-2.5 text-[13px]">
+            <dt className="text-[#a1a1a1]">{k}</dt>
+            <dd className="font-mono text-[12px] text-white">{v}</dd>
+          </div>
+        ))}
+      </dl>
+      {!compact && (
+        <ul className="mt-4 space-y-2">
+          {REQUESTS.map((r) => (
+            <li key={r.amount + r.to} className="flex items-center gap-3 rounded-[10px] bg-white/[0.03] px-3 py-2 text-[12px]">
+              <span className={`grid size-5 place-items-center rounded-full ${r.ok ? "bg-[rgba(34,197,94,0.12)] text-[#4ade80]" : "bg-[rgba(236,72,153,0.12)] text-[#f472b6]"}`}>
+                {r.ok ? <IconCheck className="size-3" strokeWidth={2.4} /> : <IconX className="size-3" strokeWidth={2.4} />}
+              </span>
+              <span className="font-mono text-white">{r.amount}</span>
+              <span className="font-mono text-[#737373]">→ {r.to}</span>
+              <span className={`ml-auto ${r.ok ? "text-[#4ade80]" : "text-[#f472b6]"}`}>{r.note}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
