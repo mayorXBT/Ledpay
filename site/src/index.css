@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+
+  --color-fog: #eef1f4;
+  --color-paper: #f8f9fb;
+  --color-ink: #14181f;
+  --color-slate: #4b5463;
+  --color-mute: #6b7482;
+  --color-line: #d5dae1;
+  --color-cobalt: #3a63d8;
+  --color-cobalt-deep: #2c4fb5;
+  --color-allow: #1e7f57;
+  --color-deny: #b83a33;
+  --color-night: #12161c;
+  --color-night-line: #262c35;
+  --color-night-text: #a9b1bd;
+
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-fog font-sans text-ink antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--color-cobalt) 22%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-cobalt);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-[15px] font-medium cursor-pointer select-none;
+    transition:
+      transform 160ms var(--ease-out-strong),
+      background-color 200ms ease,
+      color 200ms ease;
+  }
+  .btn:active {
+    transform: scale(0.97);
+  }
+  .btn-primary {
+    @apply bg-ink text-fog;
+  }
+  .btn-ghost {
+    @apply text-ink ring-1 ring-line ring-inset;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover {
+      @apply bg-cobalt-deep;
+    }
+    .btn-ghost:hover {
+      @apply bg-paper;
+    }
+  }
+}
+
+/* Staggered entrance for the hero permit and its request log. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise {
+  opacity: 0;
+  animation: rise 520ms var(--ease-out-strong) forwards;
+  animation-delay: calc(var(--i, 0) * 70ms + 120ms);
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.breathe {
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .rise {
+    animation: none;
+    opacity: 1;
+  }
+  .breathe {
+    animation: none;
+  }
+}
