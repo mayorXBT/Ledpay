@@ -1,62 +1,41 @@
-import { GithubLogoIcon } from "@phosphor-icons/react";
-import { Logo } from "./Logo";
 import { ONBOARD_URL, PAYBOX_URL, REPO_URL, STATUS_URL, THREAT_MODEL_URL } from "../links";
 
-const cols = [
-  {
-    title: "Project",
-    links: [
-      { label: "Source code", href: REPO_URL },
-      { label: "Ledger onboarding guide", href: ONBOARD_URL },
-      { label: "PayBox developer portal", href: PAYBOX_URL },
-    ],
-  },
-  {
-    title: "Security",
-    links: [
-      { label: "Threat model", href: THREAT_MODEL_URL },
-      { label: "Status and evidence", href: STATUS_URL },
-    ],
-  },
+const links = [
+  { label: "Source code", href: REPO_URL },
+  { label: "Onboarding guide", href: ONBOARD_URL },
+  { label: "Threat model", href: THREAT_MODEL_URL },
+  { label: "Status", href: STATUS_URL },
+  { label: "PayBox portal", href: PAYBOX_URL },
 ];
 
 export function Footer() {
   return (
-    <footer className="bg-fog">
-      <div className="mx-auto max-w-6xl px-5 py-20 md:px-8">
-        <div className="flex flex-col items-start justify-between gap-8 border-b border-line pb-14 md:flex-row md:items-end">
-          <h2 className="max-w-[18ch] text-[30px] font-semibold leading-tight tracking-[-0.03em] md:text-[38px]">
-            Give your agent a budget, not your keys.
-          </h2>
-          <a href={REPO_URL} className="btn btn-primary">
-            <GithubLogoIcon size={18} aria-hidden="true" />
-            View the code on GitHub
-          </a>
+    <footer className="border-t-[3px] border-rule">
+      <div className="mx-auto flex max-w-[1280px] flex-col gap-8 px-5 py-10 md:flex-row md:items-end md:justify-between md:px-12 md:py-12">
+        <div>
+          <p className="text-[32px] font-bold uppercase leading-10 text-signal">Ledpay</p>
+          <p className="mt-2 text-[14px] uppercase leading-6 text-mute md:text-[16px]">
+            Authorize once. Spend inside the limits.
+          </p>
         </div>
-        <div className="grid gap-10 pt-12 md:grid-cols-[1.5fr_1fr_1fr]">
-          <div>
-            <Logo className="text-ink" />
-            <p className="mt-4 max-w-[38ch] text-[14px] leading-relaxed text-slate">
-              A PayBox marketplace plugin for Ledger-owned smart accounts. Built for the PayBox hackathon. Testnet
-              only.
-            </p>
-          </div>
-          {cols.map((c) => (
-            <div key={c.title}>
-              <h3 className="text-[13px] font-medium text-mute">{c.title}</h3>
-              <ul className="mt-4 space-y-3 text-[14px]">
-                {c.links.map((l) => (
-                  <li key={l.label}>
-                    <a href={l.href} className="text-ink underline-offset-4 hover:underline">
-                      {l.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+        <ul className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] font-medium uppercase md:text-[14px]">
+          {links.map((l) => (
+            <li key={l.label}>
+              <a href={l.href}>
+                <span className="roll">
+                  <span>{l.label}</span>
+                  <span aria-hidden="true">{l.label}</span>
+                </span>
+              </a>
+            </li>
           ))}
+        </ul>
+      </div>
+      <div className="bg-rule">
+        <div className="mx-auto flex max-w-[1280px] flex-wrap justify-between gap-2 px-5 py-4 text-[13px] uppercase md:px-12 md:text-[14px]">
+          <p>© 2026 — Ledpay 0.1.0</p>
+          <p>Testnet only · Base Sepolia</p>
         </div>
-        <p className="mt-14 text-[12px] text-mute">Version 0.1.0. Ledger, PayBox and ZeroDev are trademarks of their respective owners.</p>
       </div>
     </footer>
   );

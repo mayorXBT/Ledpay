@@ -1,6 +1,6 @@
 # Ledpay landing page
 
-Static marketing page for Ledpay. Vite + React + TypeScript + Tailwind CSS v4. Copy is taken from the repo README and `docs/` (threat model, P0 status).
+Static marketing page for Ledpay, styled after the Framer template Accretion (white ground, signal red, Instrument Sans, changelog-style entries). Vite + React + TypeScript + Tailwind CSS v4. Copy is taken from the repo README and `docs/` (threat model, P0 status).
 
 ```bash
 cd site
