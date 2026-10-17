@@ -1,0 +1,7 @@
+{
+  "tool": "ledpay_send_usdc",
+  "arguments": {
+    "recipient": "0x1111111111111111111111111111111111111111",
+    "amountUsdc": "0"
+  }
+}
