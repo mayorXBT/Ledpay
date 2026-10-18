@@ -7,10 +7,11 @@ export const ENTRY_POINT_VERSION = "0.7" as const;
 /** Demo allowlisted recipient used in on-chain tests. */
 export const DEMO_RECIPIENT = "0x1111111111111111111111111111111111111111" as const;
 
-/** 1 token with 6 decimals. */
-export const PER_CALL_MAX_ATOMIC = 1_000_000n;
+/** 5 tokens with 6 decimals (default per-call cap). */
+export const PER_CALL_MAX_ATOMIC = 5_000_000n;
 
-export const SESSION_TTL_SECONDS = 3600;
+/** Session permission lifetime. Default 24 hours. */
+export const SESSION_TTL_SECONDS = 86_400;
 
 /**
  * Anvil account #1. TEST_ONLY owner for local Kernel tests.

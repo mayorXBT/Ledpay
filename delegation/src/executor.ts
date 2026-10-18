@@ -85,9 +85,15 @@ async function save(store: Store) {
   await writeFile(DATA, JSON.stringify(store, (_, v) => typeof v === "bigint" ? v.toString() : v, 2));
 }
 
+function sessionExpired(store: Store, now = Math.floor(Date.now() / 1000)): boolean {
+  return store.status === "ready" && !!store.policy && now > store.policy.validUntil;
+}
+
 function publicView(store: Store) {
+  const expired = sessionExpired(store);
+  const status = expired ? "expired" : store.status;
   return {
-    status: store.status,
+    status,
     ownerAddress: store.ownerAddress ?? null,
     kernelAddress: store.kernelAddress ?? null,
     sessionKeyAddress: store.sessionKeyAddress ?? null,
@@ -96,9 +102,11 @@ function publicView(store: Store) {
     ownerPath: store.ownerPath ?? null,
     signingModel: "ZeroDev Kernel session key. Ledger private key is never on this server.",
     message:
-      store.status === "ready"
-        ? "Kernel session is active. Permitted UserOps do not prompt the Ledger."
-        : "Open the Ledpay onboarding app, connect Ledger Flex, and authorize the session.",
+      status === "expired"
+        ? "Session permission expired (validUntil in the past). Re-authorize on Ledger with a fresh expiry."
+        : status === "ready"
+          ? "Kernel session is active. Permitted UserOps do not prompt the Ledger."
+          : "Open the Ledpay onboarding app, connect Ledger Flex, and authorize the session.",
   };
 }
 
@@ -284,6 +292,14 @@ const server = createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/session/send") {
       if (store.status !== "ready" || !store.approval || !store.sessionPrivateKey || !store.token || !store.policy) {
         json(res, 409, { error: "awaiting_setup", setup: "Open the Ledpay onboarding app and authorize the session on Ledger." });
+        return;
+      }
+      if (sessionExpired(store)) {
+        json(res, 409, {
+          error: "expired",
+          validUntil: store.policy.validUntil,
+          setup: "Session permission expired. Re-authorize on Ledger with a fresh expiry.",
+        });
         return;
       }
       const idempotencyKey = String(body.idempotencyKey ?? `${Date.now()}`);

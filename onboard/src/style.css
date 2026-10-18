@@ -28,6 +28,34 @@ h1 {
   padding: 0.75rem 1rem;
   color: #f3d789;
 }
+.policy {
+  border: 1px solid #2a3644;
+  margin: 1.25rem 0;
+  padding: 0.9rem 1rem 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+.policy legend {
+  padding: 0 0.35rem;
+  color: #8aa0b5;
+  font-size: 0.85rem;
+}
+.policy label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  color: #b7c6d4;
+}
+.policy input {
+  font: inherit;
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  background: #151c24;
+  color: #e8edf2;
+  border: 1px solid #2a3644;
+  padding: 0.5rem 0.6rem;
+  width: 100%;
+  box-sizing: border-box;
+}
 .row {
   display: flex;
   flex-wrap: wrap;

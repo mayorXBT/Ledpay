@@ -1,4 +1,4 @@
-import { type Address } from "viem";
+import { type Address, isAddress } from "viem";
 import { formatDeviceError } from "./device-action.ts";
 import { requestLedgerHid } from "./hid-request.ts";
 
@@ -6,12 +6,16 @@ const logEl = document.querySelector("#log") as HTMLPreElement;
 const connectBtn = document.querySelector("#connect") as HTMLButtonElement;
 const authorizeBtn = document.querySelector("#authorize") as HTMLButtonElement;
 const revokeBtn = document.querySelector("#revoke") as HTMLButtonElement;
+const recipientInput = document.querySelector("#recipient") as HTMLInputElement;
+const capUsdcInput = document.querySelector("#cap-usdc") as HTMLInputElement;
+const ttlHoursInput = document.querySelector("#ttl-hours") as HTMLInputElement;
 
 const EXECUTOR = import.meta.env.VITE_EXECUTOR_URL ?? "http://127.0.0.1:8787";
 const RPC = import.meta.env.VITE_RPC_URL ?? `${EXECUTOR}/rpc`;
 const BASE_SEPOLIA_USDC = "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as Address;
 const TOKEN = (import.meta.env.VITE_TOKEN_ADDRESS || BASE_SEPOLIA_USDC) as Address;
 const TEST_OWNER = new URLSearchParams(location.search).get("testOwner") === "1";
+const USDC_DECIMALS = 6n;
 
 let ledger: {
   address: Address;
@@ -21,6 +25,25 @@ let ledger: {
 
 function log(line: string) {
   logEl.textContent = `${logEl.textContent}\n${line}`.trim();
+}
+
+function readPolicyFromForm() {
+  const recipient = recipientInput.value.trim() as Address;
+  if (!isAddress(recipient)) {
+    throw new Error("Recipient must be a valid 0x address.");
+  }
+  const usdc = Number(capUsdcInput.value);
+  if (!Number.isFinite(usdc) || usdc <= 0) {
+    throw new Error("Per-call cap must be a positive USDC amount.");
+  }
+  const hours = Number(ttlHoursInput.value);
+  if (!Number.isFinite(hours) || hours < 1) {
+    throw new Error("Expiry must be at least 1 hour.");
+  }
+  const atomic = BigInt(Math.round(usdc * 10 ** Number(USDC_DECIMALS)));
+  const ttlSeconds = Math.floor(hours * 3600);
+  const validUntil = Math.floor(Date.now() / 1000) + ttlSeconds;
+  return { recipient, perCallMaxAtomic: atomic.toString(), validUntil, usdc, hours };
 }
 
 async function api(path: string, init?: RequestInit) {
@@ -44,15 +67,15 @@ connectBtn.addEventListener("click", async () => {
       return;
     }
     if (TEST_OWNER) {
-      const { DEMO_RECIPIENT, PER_CALL_MAX_ATOMIC, SESSION_TTL_SECONDS } = await import("../../delegation/src/config.ts");
+      const policy = readPolicyFromForm();
       log("TEST_ONLY path. This is not Ledger integration. Production sudo is the Ledger EOA.");
       await api("/session/dev-activate", {
         method: "POST",
         body: JSON.stringify({
           token: TOKEN || undefined,
-          recipient: DEMO_RECIPIENT,
-          perCallMaxAtomic: PER_CALL_MAX_ATOMIC.toString(),
-          validUntil: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
+          recipient: policy.recipient,
+          perCallMaxAtomic: policy.perCallMaxAtomic,
+          validUntil: policy.validUntil,
         }),
       });
       const session = await api("/session");
@@ -82,22 +105,23 @@ authorizeBtn.addEventListener("click", async () => {
   }
   authorizeBtn.disabled = true;
   try {
-    const config = await import("../../delegation/src/config.ts");
-    const validUntil = Math.floor(Date.now() / 1000) + config.SESSION_TTL_SECONDS;
+    const policy = readPolicyFromForm();
     log("Preparing Kernel session on the executor. Keep the Ethereum app open.");
     const prepared = await api("/session/prepare", {
       method: "POST",
       body: JSON.stringify({
         ownerAddress: ledger.address,
         token: TOKEN,
-        recipient: config.DEMO_RECIPIENT,
-        perCallMaxAtomic: config.PER_CALL_MAX_ATOMIC.toString(),
-        validUntil,
+        recipient: policy.recipient,
+        perCallMaxAtomic: policy.perCallMaxAtomic,
+        validUntil: policy.validUntil,
       }),
     });
     log(`Session public key: ${prepared.sessionKeyAddress}`);
     log(`Kernel ${prepared.kernelAddress}`);
-    log(`Policy: ERC-20 transfer of at most 1 USDC (${TOKEN}) to ${config.DEMO_RECIPIENT}, 1 hour.`);
+    log(
+      `Policy: ERC-20 transfer of at most ${policy.usdc} USDC (${TOKEN}) to ${policy.recipient}, ${policy.hours}h (until ${policy.validUntil}).`,
+    );
     log("On the Flex: approve the EIP-712 Kernel authorization. Do not refresh this tab.");
     const enableSignature = await ledger.account.signTypedData(
       prepared.typedData as Parameters<typeof ledger.account.signTypedData>[0],
@@ -109,9 +133,9 @@ authorizeBtn.addEventListener("click", async () => {
         ownerAddress: ledger.address,
         kernelAddress: prepared.kernelAddress,
         token: TOKEN,
-        recipient: config.DEMO_RECIPIENT,
-        perCallMaxAtomic: config.PER_CALL_MAX_ATOMIC.toString(),
-        validUntil,
+        recipient: policy.recipient,
+        perCallMaxAtomic: policy.perCallMaxAtomic,
+        validUntil: policy.validUntil,
       }),
     });
     log(`Kernel authorized: ${prepared.kernelAddress}`);
@@ -134,4 +158,4 @@ revokeBtn.addEventListener("click", async () => {
 });
 
 connectBtn.dataset.bound = "1";
-log("Connect is ready. Click Connect Ledger Flex.");
+log("Connect is ready. Set recipient / cap / expiry, then click Connect Ledger Flex.");

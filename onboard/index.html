@@ -26,12 +26,28 @@
         Ledger Agent Intent is a per-transaction approval product. Ledpay does not use it for autonomous spend.
         Autonomous spend uses a ZeroDev Kernel permission that you authorize once on the Ledger.
       </p>
+      <fieldset class="policy">
+        <legend>Session policy (signed on Ledger)</legend>
+        <label>
+          Recipient
+          <input id="recipient" type="text" spellcheck="false" autocomplete="off"
+            value="0x8e426701F65f66F5Bec62a0E00a7F5e396900978" />
+        </label>
+        <label>
+          Per-call cap (USDC)
+          <input id="cap-usdc" type="number" min="0.000001" step="0.000001" value="5" />
+        </label>
+        <label>
+          Expiry (hours)
+          <input id="ttl-hours" type="number" min="1" step="1" value="24" />
+        </label>
+      </fieldset>
       <div class="row">
         <button id="connect" type="button">Connect Ledger Flex</button>
         <button id="authorize" type="button" disabled>Authorize session</button>
         <button id="revoke" type="button" disabled>Request revoke</button>
       </div>
-      <pre id="log">Ready. Click Connect Ledger Flex. If Chrome already granted the Flex, no picker this time.</pre>
+      <pre id="log">Ready. Set recipient / cap / expiry, then Connect Ledger Flex.</pre>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
