@@ -11,20 +11,23 @@
       <p class="eyebrow">Ledpay · Ledger-owned Kernel session</p>
       <h1>Authorize a scoped spending key</h1>
       <p>
-        This page runs in desktop Chromium because Ledger WebHID cannot run inside the hosted PayBox plugin sandbox.
+        Runs in Chromium (desktop or Android Chrome). Ledger WebHID / Web Bluetooth cannot run inside the hosted PayBox plugin sandbox.
         The Ledger private key never leaves the device. The session key is created by the executor and can only
         call USDC <code>transfer</code> under the per-call cap until expiry — to <strong>any</strong> address.
       </p>
       <ol>
-        <li>Quit Ledger Live. USB HID is exclusive, so Live will make Chrome look frozen.</li>
-        <li>Unlock Ledger Flex and open the Ethereum app. Unlocked on the dashboard is not enough.</li>
-        <li>Click Connect. The first time, Chrome opens a device picker at the <strong>top of this tab</strong>. After that it reuses the granted Flex.</li>
-        <li>Confirm the address on the Flex screen, then authorize the session.</li>
-        <li>Fund the Kernel address with test ETH and USDC. Do not send funds to the Ledger EOA for agent spend.</li>
+        <li>Quit Ledger Live (USB HID is exclusive; Live will block Chrome).</li>
+        <li>Unlock the Ledger and open the Ethereum app.</li>
+        <li>
+          Connect with <strong>USB</strong> (desktop WebHID) or <strong>Bluetooth</strong> (Chrome on Android or desktop).
+          Chrome opens the device picker at the top of the tab / system sheet.
+        </li>
+        <li>Confirm the address on the Ledger screen, then authorize the session.</li>
+        <li>Fund the Kernel address with test ETH and USDC. Do not send agent funds to the Ledger EOA.</li>
       </ol>
       <p class="warn">
-        Ledger Agent Intent is a per-transaction approval product. Ledpay does not use it for autonomous spend.
-        Autonomous spend uses a ZeroDev Kernel permission that you authorize once on the Ledger.
+        Bluetooth needs Chrome + HTTPS (or localhost). iOS Safari does not support Web Bluetooth.
+        Ledger Agent Intent is a per-transaction approval product; Ledpay uses a one-time Kernel permission instead.
       </p>
       <fieldset class="policy">
         <legend>Session policy (signed on Ledger)</legend>
@@ -45,11 +48,12 @@
         </label>
       </fieldset>
       <div class="row">
-        <button id="connect" type="button">Connect Ledger Flex</button>
+        <button id="connect-usb" type="button">Connect via USB</button>
+        <button id="connect-ble" type="button">Connect via Bluetooth</button>
         <button id="authorize" type="button" disabled>Authorize session</button>
         <button id="revoke" type="button" disabled>Request revoke</button>
       </div>
-      <pre id="log">Ready. Set cap / expiry, then Connect Ledger Flex.</pre>
+      <pre id="log">Ready. Set cap / expiry, then connect over USB or Bluetooth.</pre>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

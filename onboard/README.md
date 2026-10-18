@@ -4,10 +4,10 @@ Ledger USB/WebHID cannot run inside the hosted PayBox plugin sandbox. This Vite 
 
 ## What it does
 
-1. Connects a Ledger Flex over WebHID (`localhost` or HTTPS, user gesture).
+1. Connects a Ledger over **USB (WebHID)** or **Bluetooth (WebBLE via `@ledgerhq/hw-transport-web-ble`)**. Needs Chromium on desktop or Android (`localhost` or HTTPS, user gesture).
 2. Derives and **verifies the EVM address on device**.
 3. Asks the executor to create a session key (public address only).
-4. Uses the Ledger as Kernel sudo to authorize a ZeroDev permission: ERC-20 `transfer` to one recipient, per-call cap, timestamp expiry.
+4. Uses the Ledger as Kernel sudo to authorize a ZeroDev permission: ERC-20 `transfer` to any recipient, per-call cap, timestamp expiry.
 5. Sends the serialized approval to the executor. The executor never receives the Ledger key.
 
 ## Run locally

@@ -10,9 +10,13 @@
     "test": "node --experimental-strip-types --test src/device-action.test.ts src/hid-request.test.ts"
   },
   "dependencies": {
+    "@ethersproject/hash": "^5.8.0",
     "@ledgerhq/device-management-kit": "^1.11.0",
     "@ledgerhq/device-signer-kit-ethereum": "^1.18.2",
     "@ledgerhq/device-transport-kit-web-hid": "^1.2.4",
+    "@ledgerhq/hw-app-eth": "^7.11.0",
+    "@ledgerhq/hw-transport-web-ble": "^6.35.0",
+    "buffer": "^6.0.3",
     "rxjs": "^7.8.2",
     "viem": "^2.57.7",
     "vite": "^8.3.4"

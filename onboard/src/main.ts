@@ -1,9 +1,13 @@
+import { Buffer } from "buffer";
 import { type Address, isAddress } from "viem";
 import { formatDeviceError } from "./device-action.ts";
 import { requestLedgerHid } from "./hid-request.ts";
 
+(globalThis as typeof globalThis & { Buffer: typeof Buffer }).Buffer = Buffer;
+
 const logEl = document.querySelector("#log") as HTMLPreElement;
-const connectBtn = document.querySelector("#connect") as HTMLButtonElement;
+const connectUsbBtn = document.querySelector("#connect-usb") as HTMLButtonElement;
+const connectBleBtn = document.querySelector("#connect-ble") as HTMLButtonElement;
 const authorizeBtn = document.querySelector("#authorize") as HTMLButtonElement;
 const revokeBtn = document.querySelector("#revoke") as HTMLButtonElement;
 const recipientInput = document.querySelector("#recipient") as HTMLInputElement;
@@ -25,6 +29,18 @@ let ledger: {
 
 function log(line: string) {
   logEl.textContent = `${logEl.textContent}\n${line}`.trim();
+}
+
+function setConnectBusy(busy: boolean, active?: "usb" | "ble") {
+  connectUsbBtn.disabled = busy;
+  connectBleBtn.disabled = busy;
+  if (!busy) {
+    connectUsbBtn.textContent = "Connect via USB";
+    connectBleBtn.textContent = "Connect via Bluetooth";
+    return;
+  }
+  if (active === "usb") connectUsbBtn.textContent = "Connecting…";
+  if (active === "ble") connectBleBtn.textContent = "Connecting…";
 }
 
 function readPolicyFromForm() {
@@ -79,9 +95,8 @@ async function api(path: string, init?: RequestInit) {
   return body;
 }
 
-connectBtn.addEventListener("click", async () => {
-  connectBtn.disabled = true;
-  connectBtn.textContent = "Connecting…";
+async function connectUsb() {
+  setConnectBusy(true, "usb");
   try {
     if (ledger) {
       log(`Already connected: ${ledger.address}. Click Authorize session.`);
@@ -108,22 +123,54 @@ connectBtn.addEventListener("click", async () => {
       return;
     }
     await requestLedgerHid(log);
-    connectBtn.textContent = "Talking to Ledger…";
+    connectUsbBtn.textContent = "Talking to Ledger…";
     const { connectLedger } = await import("./ledger.ts");
     ledger = await connectLedger(log, { hidAlreadyGranted: true });
+    log("USB (WebHID) ready.");
     authorizeBtn.disabled = false;
     revokeBtn.disabled = false;
   } catch (error) {
     log(formatDeviceError(error));
   } finally {
-    connectBtn.disabled = false;
-    connectBtn.textContent = "Connect Ledger Flex";
+    setConnectBusy(false);
   }
+}
+
+async function connectBle() {
+  setConnectBusy(true, "ble");
+  try {
+    if (ledger) {
+      log(`Already connected: ${ledger.address}. Click Authorize session.`);
+      authorizeBtn.disabled = false;
+      revokeBtn.disabled = false;
+      return;
+    }
+    if (TEST_OWNER) {
+      log("TEST_ONLY uses the executor Anvil owner. Use Connect via USB with ?testOwner=1, or clear that flag for Bluetooth.");
+      return;
+    }
+    const { connectLedgerBle } = await import("./ledger-ble.ts");
+    ledger = await connectLedgerBle(log);
+    log("Bluetooth ready.");
+    authorizeBtn.disabled = false;
+    revokeBtn.disabled = false;
+  } catch (error) {
+    log(formatDeviceError(error));
+  } finally {
+    setConnectBusy(false);
+  }
+}
+
+connectUsbBtn.addEventListener("click", () => {
+  void connectUsb();
+});
+connectBleBtn.addEventListener("click", () => {
+  void connectBle();
 });
 
 authorizeBtn.addEventListener("click", async () => {
   if (!ledger) {
-    log("Connect Ledger first.");
+    log("Connect Ledger first (USB or Bluetooth).");
     return;
   }
   authorizeBtn.disabled = true;
@@ -145,7 +192,7 @@ authorizeBtn.addEventListener("click", async () => {
     log(
       `Policy: USDC transfer to any address, at most ${policy.usdc} USDC per call, until ${policy.expiryLabel}.`,
     );
-    log("On the Flex: approve the EIP-712 Kernel authorization. Do not refresh this tab.");
+    log("On the Ledger: approve the EIP-712 Kernel authorization. Do not refresh this tab.");
     const enableSignature = await ledger.account.signTypedData(
       prepared.typedData as Parameters<typeof ledger.account.signTypedData>[0],
     );
@@ -180,6 +227,5 @@ revokeBtn.addEventListener("click", async () => {
   }
 });
 
-connectBtn.dataset.bound = "1";
 log(`Executor: ${EXECUTOR}`);
-log("Connect is ready. Set cap / expiry, then click Connect Ledger Flex.");
+log("Connect is ready. USB = WebHID. Bluetooth = WebBLE (@ledgerhq/hw-transport-web-ble).");
