@@ -28,6 +28,6 @@ Environment:
 
 `?testOwner=1` hits `POST /session/dev-activate` and requires `LEDPAY_ALLOW_TEST_OWNER=1` on the executor. That path is labeled TEST_ONLY and is **not** Ledger integration.
 
-## Blockers
+## Notes
 
-Physical Ledger button confirmation is required for P0.1–P0.3. Transaction Checks (`originToken`) are omitted until Ledger issues one; getAddress / signMessage / signTypedData still run on device.
+Physical Ledger button confirmation is required for address verify and permission signing. Transaction Checks (`originToken`) are omitted until Ledger issues one; `getAddress` / `signMessage` / `signTypedData` still run on device.

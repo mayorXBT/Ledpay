@@ -2,7 +2,7 @@
 
 Isolated from the root PayBox plugin so `pnpm test --frozen-lockfile` stays intact.
 
-This package implements the PRD spend path:
+Kernel session stack for Ledpay:
 
 - ZeroDev Kernel v3.1, EntryPoint 0.7
 - Agent-created ECDSA session key
