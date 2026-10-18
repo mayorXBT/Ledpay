@@ -1,11 +1,10 @@
 import { createServer, type ServerResponse } from "node:http";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile, access } from "node:fs/promises";
 import { resolve } from "node:path";
-import { createPublicClient, http, type Address, type Hex } from "viem";
+import { createPublicClient, http, isAddress, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {
   LEDPAY_CHAIN,
-  DEMO_RECIPIENT,
   PER_CALL_MAX_ATOMIC,
   SESSION_TTL_SECONDS,
   TEST_ONLY_OWNER_KEY,
@@ -22,7 +21,7 @@ import { describePolicy, type SpendPolicyInput } from "./policies.js";
 
 type PersistedPolicy = {
   token: Address;
-  recipient: Address;
+  recipient?: Address;
   perCallMaxAtomic: string;
   validUntil: number;
   validAfter?: number;
@@ -50,10 +49,14 @@ type Store = {
   }>;
 };
 
-const DATA = resolve(import.meta.dirname, "../.data/session.json");
+const DATA_DIR = process.env.LEDPAY_DATA_DIR
+  ? resolve(process.env.LEDPAY_DATA_DIR)
+  : resolve(import.meta.dirname, "../.data");
+const DATA = resolve(DATA_DIR, "session.json");
 const RPC = process.env.LEDPAY_RPC_URL ?? "http://127.0.0.1:8545";
-const BUNDLER = process.env.LEDPAY_BUNDLER_URL ?? "http://127.0.0.1:4337";
-const PORT = Number(process.env.LEDPAY_EXECUTOR_PORT ?? "8787");
+const BUNDLER = process.env.LEDPAY_BUNDLER_URL ?? "https://public.pimlico.io/v2/84532/rpc";
+const PORT = Number(process.env.PORT ?? process.env.LEDPAY_EXECUTOR_PORT ?? "8787");
+const HOST = process.env.LEDPAY_HOST ?? (process.env.PORT ? "0.0.0.0" : "127.0.0.1");
 const ALLOW_TEST_OWNER = process.env.LEDPAY_ALLOW_TEST_OWNER === "1";
 const CORS = {
   "access-control-allow-origin": "*",
@@ -72,17 +75,43 @@ function toSpendPolicy(policy: PersistedPolicy): SpendPolicyInput {
   };
 }
 
-async function load(): Promise<Store> {
+async function fileExists(path: string) {
   try {
-    return JSON.parse(await readFile(DATA, "utf8")) as Store;
+    await access(path);
+    return true;
   } catch {
-    return { status: "awaiting_setup", transactions: [] };
+    return false;
   }
 }
 
+async function load(): Promise<Store> {
+  if (await fileExists(DATA)) {
+    return JSON.parse(await readFile(DATA, "utf8")) as Store;
+  }
+  // Durable seed for hosts without a persistent disk (set after first authorize).
+  if (process.env.LEDPAY_SESSION_JSON) {
+    return JSON.parse(process.env.LEDPAY_SESSION_JSON) as Store;
+  }
+  return { status: "awaiting_setup", transactions: [] };
+}
+
 async function save(store: Store) {
-  await mkdir(resolve(DATA, ".."), { recursive: true });
-  await writeFile(DATA, JSON.stringify(store, (_, v) => typeof v === "bigint" ? v.toString() : v, 2));
+  await mkdir(DATA_DIR, { recursive: true });
+  const payload = JSON.stringify(store, (_, v) => typeof v === "bigint" ? v.toString() : v, 2);
+  await writeFile(DATA, payload);
+  // Optional durable mirror (e.g. object storage webhook). Never log secrets.
+  const hook = process.env.LEDPAY_SESSION_PERSIST_HOOK;
+  if (hook) {
+    try {
+      await fetch(hook, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: payload,
+      });
+    } catch (error) {
+      console.error(`session persist hook failed: ${error instanceof Error ? error.message : error}`);
+    }
+  }
 }
 
 function sessionExpired(store: Store, now = Math.floor(Date.now() / 1000)): boolean {
@@ -105,7 +134,7 @@ function publicView(store: Store) {
       status === "expired"
         ? "Session permission expired (validUntil in the past). Re-authorize on Ledger with a fresh expiry."
         : status === "ready"
-          ? "Kernel session is active. Permitted UserOps do not prompt the Ledger."
+          ? "Kernel session is active. Agent can pay any address within the per-call USDC cap until expiry. Permitted UserOps do not prompt the Ledger."
           : "Open the Ledpay onboarding app, connect Ledger Flex, and authorize the session.",
   };
 }
@@ -116,9 +145,10 @@ function json(res: ServerResponse, status: number, body: unknown) {
 }
 
 function persistPolicy(body: Record<string, unknown>): PersistedPolicy {
+  const recipientRaw = body.recipient ? String(body.recipient).trim() : "";
   return {
     token: String(body.token) as Address,
-    recipient: (body.recipient ? String(body.recipient) : DEMO_RECIPIENT) as Address,
+    ...(recipientRaw && isAddress(recipientRaw) ? { recipient: recipientRaw as Address } : {}),
     perCallMaxAtomic: String(body.perCallMaxAtomic ?? PER_CALL_MAX_ATOMIC.toString()),
     validUntil: Number(body.validUntil ?? Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS),
     validAfter: body.validAfter ? Number(body.validAfter) : 0,
@@ -310,8 +340,26 @@ const server = createServer(async (req, res) => {
         return;
       }
       const id = `tx_${store.transactions.length + 1}`;
-      const recipient = (body.recipient ? String(body.recipient) as Address : store.policy.recipient);
+      const recipientRaw = String(body.recipient ?? "").trim();
+      if (!recipientRaw || !isAddress(recipientRaw)) {
+        json(res, 400, { error: "recipient must be a valid 0x address" });
+        return;
+      }
+      const recipient = recipientRaw as Address;
       const amount = BigInt(String(body.amountAtomic ?? "0"));
+      const maxAtomic = BigInt(store.policy.perCallMaxAtomic);
+      if (amount <= 0n) {
+        json(res, 400, { error: "amountAtomic must be > 0" });
+        return;
+      }
+      if (amount > maxAtomic) {
+        json(res, 400, {
+          error: "amount_exceeds_max",
+          perCallMaxAtomic: store.policy.perCallMaxAtomic,
+          amountAtomic: amount.toString(),
+        });
+        return;
+      }
       try {
         const publicClient = createPublicClient({ chain: LEDPAY_CHAIN, transport: http(RPC) });
         const result = await sendSessionTransfer({
@@ -390,6 +438,7 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, "127.0.0.1", () => {
-  console.error(`Ledpay executor http://127.0.0.1:${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.error(`Ledpay executor http://${HOST}:${PORT}`);
+  console.error(`data=${DATA} bundler=${BUNDLER}`);
 });

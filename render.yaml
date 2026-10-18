@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: ledpay-executor
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: delegation
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: LEDPAY_HOST
+        value: 0.0.0.0
+      - key: LEDPAY_DATA_DIR
+        value: /opt/render/project/src/delegation/.data
+      - key: LEDPAY_RPC_URL
+        sync: false
+      - key: LEDPAY_BUNDLER_URL
+        value: https://public.pimlico.io/v2/84532/rpc
+      - key: LEDPAY_ALLOW_TEST_OWNER
+        value: "0"
+      # After first Ledger authorize, paste the sanitized+secret session JSON here
+      # so restarts on the free plan keep the session (no persistent disk).
+      - key: LEDPAY_SESSION_JSON
+        sync: false

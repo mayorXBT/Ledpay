@@ -9,7 +9,8 @@ import { PER_CALL_MAX_ATOMIC } from "./config.js";
 
 export type SpendPolicyInput = {
   token: Address;
-  recipient: Address;
+  /** Optional display/default only. On-chain policy allows any transfer recipient. */
+  recipient?: Address;
   perCallMaxAtomic?: bigint;
   validAfter?: number;
   validUntil: number;
@@ -26,7 +27,8 @@ export function toLedpayPolicies(input: SpendPolicyInput) {
         abi: erc20Abi,
         functionName: "transfer",
         args: [
-          { condition: ParamCondition.EQUAL, value: input.recipient },
+          // Any recipient — safety is per-call amount + timestamp expiry.
+          null,
           { condition: ParamCondition.LESS_THAN_OR_EQUAL, value: perCallMax },
         ],
       },
@@ -43,12 +45,13 @@ export function describePolicy(input: SpendPolicyInput) {
   return {
     chainId: 84532,
     token: input.token,
-    recipient: input.recipient,
+    recipient: input.recipient ?? "any",
     perCallMaxAtomic: (input.perCallMaxAtomic ?? PER_CALL_MAX_ATOMIC).toString(),
     validUntil: input.validUntil,
     selector: "transfer(address,uint256)",
     valueLimitWei: "0",
     operations: "call",
     enforcedOnchain: true as const,
+    recipientLocked: false as const,
   };
 }

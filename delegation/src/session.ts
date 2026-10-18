@@ -5,7 +5,6 @@ import {
   type TypedDataDefinition,
   encodeFunctionData,
   erc20Abi,
-  http,
 } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { addressToEmptyAccount, createKernelAccount, createKernelAccountClient } from "@zerodev/sdk";
@@ -19,6 +18,7 @@ import {
 import { getEntryPoint, KERNEL_V3_1 } from "@zerodev/sdk/constants";
 import { toLedpayPolicies, type SpendPolicyInput } from "./policies.js";
 import { ENTRY_POINT_VERSION, LEDPAY_CHAIN } from "./config.js";
+import { bundlerTransport } from "./bundler-transport.js";
 import type { PublicClient } from "viem";
 
 export const kernelVersion = KERNEL_V3_1;
@@ -132,7 +132,7 @@ export async function sessionClient(opts: {
   const client = createKernelAccountClient({
     account,
     chain: LEDPAY_CHAIN,
-    bundlerTransport: http(opts.bundlerUrl, { timeout: 120_000 }),
+    bundlerTransport: bundlerTransport(opts.bundlerUrl),
     client: opts.publicClient,
   });
   return { account, client };
@@ -187,7 +187,7 @@ export async function revokeSession(opts: {
   const client = createKernelAccountClient({
     account: sudoAccount,
     chain: LEDPAY_CHAIN,
-    bundlerTransport: http(opts.bundlerUrl, { timeout: 120_000 }),
+    bundlerTransport: bundlerTransport(opts.bundlerUrl),
     client: opts.publicClient,
   });
   const emptySessionKeySigner = await toECDSASigner({

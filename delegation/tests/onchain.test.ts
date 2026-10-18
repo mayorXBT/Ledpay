@@ -166,7 +166,7 @@ async function main() {
         amount: PER_CALL_MAX_ATOMIC + 1n,
       }));
 
-      await expectFailure("wrong recipient", () => sendSessionTransfer({
+      const altRecipient = await sendSessionTransfer({
         publicClient,
         bundlerUrl: bundler.url,
         approval: approved.approval,
@@ -174,7 +174,9 @@ async function main() {
         token,
         recipient: "0x2222222222222222222222222222222222222222",
         amount: 1n,
-      }));
+      });
+      assert(altRecipient.success, "any-recipient transfer must succeed on-chain");
+      console.error(`PASS any-recipient transfer tx=${altRecipient.txHash}`);
 
       const revoked = await revokeSession({
         publicClient,

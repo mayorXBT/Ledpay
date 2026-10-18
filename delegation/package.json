@@ -4,10 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "tsx scripts/build.mjs",
+    "start": "tsx src/executor.ts",
     "test": "node scripts/compile-token.mjs && tsx tests/onchain.test.ts",
     "compile-token": "node scripts/compile-token.mjs",
     "executor": "tsx src/executor.ts",
     "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "description": "",
   "main": "index.js",
@@ -18,16 +23,16 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/node": "^26.6.5",
     "@zerodev/ecdsa-validator": "^5.4.9",
     "@zerodev/permissions": "^5.6.4",
     "@zerodev/sdk": "^5.5.11",
     "tslib": "^2.8.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
     "viem": "^2.57.7"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5",
-    "solc": "^0.8.24",
-    "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "solc": "^0.8.24"
   }
 }

@@ -9,9 +9,9 @@ const revokeBtn = document.querySelector("#revoke") as HTMLButtonElement;
 const recipientInput = document.querySelector("#recipient") as HTMLInputElement;
 const capUsdcInput = document.querySelector("#cap-usdc") as HTMLInputElement;
 const ttlHoursInput = document.querySelector("#ttl-hours") as HTMLInputElement;
+const policySummary = document.querySelector("#policy-summary") as HTMLParagraphElement;
 
 const EXECUTOR = import.meta.env.VITE_EXECUTOR_URL ?? "http://127.0.0.1:8787";
-const RPC = import.meta.env.VITE_RPC_URL ?? `${EXECUTOR}/rpc`;
 const BASE_SEPOLIA_USDC = "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as Address;
 const TOKEN = (import.meta.env.VITE_TOKEN_ADDRESS || BASE_SEPOLIA_USDC) as Address;
 const TEST_OWNER = new URLSearchParams(location.search).get("testOwner") === "1";
@@ -28,9 +28,9 @@ function log(line: string) {
 }
 
 function readPolicyFromForm() {
-  const recipient = recipientInput.value.trim() as Address;
-  if (!isAddress(recipient)) {
-    throw new Error("Recipient must be a valid 0x address.");
+  const recipientRaw = recipientInput.value.trim();
+  if (recipientRaw && !isAddress(recipientRaw)) {
+    throw new Error("Optional recipient must be a valid 0x address, or leave blank.");
   }
   const usdc = Number(capUsdcInput.value);
   if (!Number.isFinite(usdc) || usdc <= 0) {
@@ -43,8 +43,31 @@ function readPolicyFromForm() {
   const atomic = BigInt(Math.round(usdc * 10 ** Number(USDC_DECIMALS)));
   const ttlSeconds = Math.floor(hours * 3600);
   const validUntil = Math.floor(Date.now() / 1000) + ttlSeconds;
-  return { recipient, perCallMaxAtomic: atomic.toString(), validUntil, usdc, hours };
+  const expiryLabel = new Date(validUntil * 1000).toISOString();
+  return {
+    recipient: recipientRaw ? (recipientRaw as Address) : undefined,
+    perCallMaxAtomic: atomic.toString(),
+    validUntil,
+    usdc,
+    hours,
+    expiryLabel,
+  };
 }
+
+function refreshSummary() {
+  try {
+    const policy = readPolicyFromForm();
+    policySummary.textContent =
+      `Your agent can pay any address, up to ${policy.usdc} USDC per payment, until ${policy.expiryLabel} (${policy.hours}h from authorize).`;
+  } catch {
+    policySummary.textContent =
+      "Your agent can pay any address, up to X USDC per payment, until expiry.";
+  }
+}
+
+capUsdcInput.addEventListener("input", refreshSummary);
+ttlHoursInput.addEventListener("input", refreshSummary);
+refreshSummary();
 
 async function api(path: string, init?: RequestInit) {
   const response = await fetch(`${EXECUTOR}${path}`, {
@@ -120,7 +143,7 @@ authorizeBtn.addEventListener("click", async () => {
     log(`Session public key: ${prepared.sessionKeyAddress}`);
     log(`Kernel ${prepared.kernelAddress}`);
     log(
-      `Policy: ERC-20 transfer of at most ${policy.usdc} USDC (${TOKEN}) to ${policy.recipient}, ${policy.hours}h (until ${policy.validUntil}).`,
+      `Policy: USDC transfer to any address, at most ${policy.usdc} USDC per call, until ${policy.expiryLabel}.`,
     );
     log("On the Flex: approve the EIP-712 Kernel authorization. Do not refresh this tab.");
     const enableSignature = await ledger.account.signTypedData(
@@ -158,4 +181,5 @@ revokeBtn.addEventListener("click", async () => {
 });
 
 connectBtn.dataset.bound = "1";
-log("Connect is ready. Set recipient / cap / expiry, then click Connect Ledger Flex.");
+log(`Executor: ${EXECUTOR}`);
+log("Connect is ready. Set cap / expiry, then click Connect Ledger Flex.");

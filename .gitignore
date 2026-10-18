@@ -3,6 +3,7 @@ dist/*
 node_modules/
 .env
 .env.local
+.vercel/
 .gstack/
 brag-output/
 delegation/node_modules/

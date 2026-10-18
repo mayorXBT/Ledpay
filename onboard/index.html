@@ -13,14 +13,14 @@
       <p>
         This page runs in desktop Chromium because Ledger WebHID cannot run inside the hosted PayBox plugin sandbox.
         The Ledger private key never leaves the device. The session key is created by the executor and can only
-        transfer the named test token to the named recipient, under the per-call cap, until expiry.
+        call USDC <code>transfer</code> under the per-call cap until expiry — to <strong>any</strong> address.
       </p>
       <ol>
         <li>Quit Ledger Live. USB HID is exclusive, so Live will make Chrome look frozen.</li>
         <li>Unlock Ledger Flex and open the Ethereum app. Unlocked on the dashboard is not enough.</li>
         <li>Click Connect. The first time, Chrome opens a device picker at the <strong>top of this tab</strong>. After that it reuses the granted Flex.</li>
         <li>Confirm the address on the Flex screen, then authorize the session.</li>
-        <li>Fund the Kernel address with test ETH and the test token. Do not send funds to the Ledger EOA for agent spend.</li>
+        <li>Fund the Kernel address with test ETH and USDC. Do not send funds to the Ledger EOA for agent spend.</li>
       </ol>
       <p class="warn">
         Ledger Agent Intent is a per-transaction approval product. Ledpay does not use it for autonomous spend.
@@ -28,11 +28,9 @@
       </p>
       <fieldset class="policy">
         <legend>Session policy (signed on Ledger)</legend>
-        <label>
-          Recipient
-          <input id="recipient" type="text" spellcheck="false" autocomplete="off"
-            value="0x8e426701F65f66F5Bec62a0E00a7F5e396900978" />
-        </label>
+        <p id="policy-summary" class="policy-summary">
+          Your agent can pay any address, up to 5 USDC per payment, until expiry (24h from authorize).
+        </p>
         <label>
           Per-call cap (USDC)
           <input id="cap-usdc" type="number" min="0.000001" step="0.000001" value="5" />
@@ -41,13 +39,17 @@
           Expiry (hours)
           <input id="ttl-hours" type="number" min="1" step="1" value="24" />
         </label>
+        <label class="optional">
+          Optional default recipient (display only — not locked on-chain)
+          <input id="recipient" type="text" spellcheck="false" autocomplete="off" placeholder="0x… (leave blank for any)" />
+        </label>
       </fieldset>
       <div class="row">
         <button id="connect" type="button">Connect Ledger Flex</button>
         <button id="authorize" type="button" disabled>Authorize session</button>
         <button id="revoke" type="button" disabled>Request revoke</button>
       </div>
-      <pre id="log">Ready. Set recipient / cap / expiry, then Connect Ledger Flex.</pre>
+      <pre id="log">Ready. Set cap / expiry, then Connect Ledger Flex.</pre>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
