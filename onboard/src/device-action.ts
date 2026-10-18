@@ -30,7 +30,7 @@ const HID_ERROR_RULES: Array<{ test: (raw: string) => boolean; message: string }
       raw.includes("notallowederror") ||
       raw.includes("securityerror"),
     message:
-      "Chrome blocked the HID prompt. Click Connect again, stay on this tab, and use desktop Chrome at http://localhost:5173.",
+      "Chrome blocked the HID prompt. Click Connect again and stay on this tab.",
   },
   {
     test: (raw) => raw.includes("no selected device") || raw.includes("no device was selected"),

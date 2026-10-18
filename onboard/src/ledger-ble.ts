@@ -57,13 +57,15 @@ export async function connectLedgerBle(log: (line: string) => void): Promise<{
   account: LocalAccount;
   disconnect: () => Promise<void>;
 }> {
-  if (!(await TransportWebBLE.isSupported())) {
+  // Keep these checks synchronous so TransportWebBLE.create() still runs in the
+  // same user-gesture turn as the button click (Chrome BLE requirement).
+  if (!window.isSecureContext) {
+    throw new Error("Bluetooth needs a secure context (HTTPS or localhost).");
+  }
+  if (!("bluetooth" in navigator) || typeof navigator.bluetooth?.requestDevice !== "function") {
     throw new Error(
       "Web Bluetooth is not supported in this browser. Use Chrome on Android or desktop Chrome. Safari and iOS Chrome do not expose Web Bluetooth.",
     );
-  }
-  if (!window.isSecureContext) {
-    throw new Error("Bluetooth needs a secure context (HTTPS or http://localhost).");
   }
 
   log("Chrome will open a Bluetooth device picker. Select your Ledger. Keep Bluetooth on and the device unlocked.");

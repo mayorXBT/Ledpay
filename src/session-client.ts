@@ -15,7 +15,7 @@ function executorUrl() {
 }
 
 export function onboardUrl() {
-  return process.env.LEDPAY_ONBOARD_URL?.replace(/\/$/, "") ?? "http://127.0.0.1:5173";
+  return process.env.LEDPAY_ONBOARD_URL?.replace(/\/$/, "") ?? "https://ledpay-onboard.vercel.app";
 }
 
 export async function fetchExecutor(path: string, init?: RequestInit) {

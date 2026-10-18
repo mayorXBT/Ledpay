@@ -283,7 +283,7 @@ function createServer() {
     {
       title: "Get Ledger onboarding URL",
       description:
-        "Returns the Ledpay browser onboarding URL. Ledger USB/WebHID cannot run inside the PayBox sandbox. Open this URL on desktop Chromium, connect a Ledger Flex, and authorize the Kernel session.",
+        "Returns the Ledpay browser onboarding URL. Open it in Chrome. Desktop: USB. Android: Bluetooth. iPhone/iOS is not supported. Verify the address on the device, then authorize the session key. Ledpay never asks for the Ledger PIN or seed.",
       inputSchema: z.object({}).strict(),
       outputSchema: z.object({ setupUrl: z.string(), executorConfigured: z.boolean(), message: z.string() }).strict(),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -294,7 +294,7 @@ function createServer() {
         setupUrl,
         executorConfigured: executorConfigured(),
         message:
-          "Open the URL in desktop Chromium, connect Ledger Flex over USB, verify the address on device, then authorize the session key. Ledpay never asks for the Ledger PIN or seed.",
+          "Open this URL in Chrome. Desktop: connect the Ledger Flex over USB. Android: use Connect via Bluetooth (USB/WebHID is not available on Android). iPhone/iOS is not supported. Verify the address on the device, then authorize the session key. Ledpay never asks for the Ledger PIN or seed.",
       };
       return {
         content: [{ type: "text" as const, text: `${structuredContent.message} ${setupUrl}` }],

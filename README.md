@@ -49,8 +49,8 @@ Upload `dist/plugin.mjs` in the [PayBox developer portal](https://developer.payb
 | Network hosts | None for sample tools. Add the executor HTTPS hostname when using session tools. |
 | `LEDPAY_MAX_AMOUNT_USDC` | Optional. Default `1`. |
 | `LEDPAY_ALLOWED_RECIPIENTS` | Optional. Comma-separated `0x` addresses. |
-| `LEDPAY_EXECUTOR_URL` | Session executor origin, e.g. `https://<tunnel>.trycloudflare.com` |
-| `LEDPAY_ONBOARD_URL` | Optional. Ledger WebHID app origin. Default `http://localhost:5173` |
+| `LEDPAY_EXECUTOR_URL` | Session executor origin. Default/example `https://ledpay-executor.onrender.com` |
+| `LEDPAY_ONBOARD_URL` | Optional. Ledger onboarding app origin. Default `https://ledpay-onboard.vercel.app` |
 
 Secrets: none in the plugin. Do not put private keys in PayBox variables.
 

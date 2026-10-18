@@ -2,6 +2,7 @@ import { Buffer } from "buffer";
 import { type Address, isAddress } from "viem";
 import { formatDeviceError } from "./device-action.ts";
 import { requestLedgerHid } from "./hid-request.ts";
+import { connectLedgerBle } from "./ledger-ble.ts";
 
 (globalThis as typeof globalThis & { Buffer: typeof Buffer }).Buffer = Buffer;
 
@@ -20,6 +21,7 @@ const BASE_SEPOLIA_USDC = "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as Addres
 const TOKEN = (import.meta.env.VITE_TOKEN_ADDRESS || BASE_SEPOLIA_USDC) as Address;
 const TEST_OWNER = new URLSearchParams(location.search).get("testOwner") === "1";
 const USDC_DECIMALS = 6n;
+const usbAvailable = "hid" in navigator && typeof navigator.hid?.requestDevice === "function";
 
 let ledger: {
   address: Address;
@@ -32,7 +34,7 @@ function log(line: string) {
 }
 
 function setConnectBusy(busy: boolean, active?: "usb" | "ble") {
-  connectUsbBtn.disabled = busy;
+  connectUsbBtn.disabled = busy || !usbAvailable;
   connectBleBtn.disabled = busy;
   if (!busy) {
     connectUsbBtn.textContent = "Connect via USB";
@@ -149,7 +151,6 @@ async function connectBle() {
       log("TEST_ONLY uses the executor Anvil owner. Use Connect via USB with ?testOwner=1, or clear that flag for Bluetooth.");
       return;
     }
-    const { connectLedgerBle } = await import("./ledger-ble.ts");
     ledger = await connectLedgerBle(log);
     log("Bluetooth ready.");
     authorizeBtn.disabled = false;
@@ -167,6 +168,12 @@ connectUsbBtn.addEventListener("click", () => {
 connectBleBtn.addEventListener("click", () => {
   void connectBle();
 });
+
+if (!usbAvailable) {
+  connectUsbBtn.disabled = true;
+  connectUsbBtn.title = "USB needs desktop Chrome or Edge with WebHID";
+  log("USB is unavailable here. Use desktop Chrome for Connect via USB, or Connect via Bluetooth on Android Chrome.");
+}
 
 authorizeBtn.addEventListener("click", async () => {
   if (!ledger) {

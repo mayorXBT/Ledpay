@@ -4,7 +4,7 @@ const LEDGER_VENDOR_ID = 11415;
 
 export async function requestLedgerHid(log: (line: string) => void): Promise<HIDDevice[]> {
   if (!("hid" in navigator) || typeof navigator.hid?.requestDevice !== "function") {
-    throw new Error("WebHID is unavailable. Use desktop Chrome on http://localhost:5173 or HTTPS.");
+    throw new Error("WebHID is unavailable in this browser. Use desktop Chrome or Edge over HTTPS. On Android use Connect via Bluetooth.");
   }
   const granted = (await navigator.hid.getDevices()).filter(
     (device) => device.vendorId === LEDGER_VENDOR_ID,
